@@ -18,6 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import csv
 import json
 import re
 import threading
@@ -296,19 +297,28 @@ def gitlab_hook_helper(data):
     }
 
 
+def get_subproject_stats(request, project, subproject):
+    '''
+    Gets all the stats of a subproject
+    '''
+    subprj = get_subproject(request, project, subproject)
+    response = []
+    for trans in subprj.translation_set.all():
+        response.append(trans.get_stats())
+
+    return response
+    
+
 def export_stats(request, project, subproject):
     '''
     Exports stats in JSON format.
     '''
-    subprj = get_subproject(request, project, subproject)
 
     jsonp = None
     if 'jsonp' in request.GET and request.GET['jsonp']:
         jsonp = request.GET['jsonp']
 
-    response = []
-    for trans in subprj.translation_set.all():
-        response.append(trans.get_stats())
+    response = get_subproject_stats(request, project, subproject)
     if jsonp:
         return HttpResponse(
             '{0}({1})'.format(
@@ -324,3 +334,19 @@ def export_stats(request, project, subproject):
         data=response,
         safe=False
     )
+
+def export_csv_stats(request, project, subproject):
+    '''
+    Exports stats in csv format
+    '''
+
+    data = get_subproject_stats(request, project, subproject)
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="statistics.csv"'
+    if data:
+        writer = csv.DictWriter(response, fieldnames=data[0].keys())
+        for item in data:
+            writer.writerow(item)
+
+    return response
+

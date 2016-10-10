@@ -510,6 +510,13 @@ urlpatterns = [
         name='export_stats',
     ),
 
+    url(
+        r'^exports/csvstats/' + SUBPROJECT + '$',
+        weblate.trans.views.api.export_csv_stats,
+        name='export_csv_stats',
+    ),
+
+
     # RSS exports
     url(
         r'^exports/rss/$',
